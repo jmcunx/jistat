@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 2015 2016 ... 2019 2020 2021
+ * Copyright (c) 2014 ... 2021 2022
  *     John McCue <jmccue@jmcunx.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -15,7 +15,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifndef _MSDOS
 #include <sys/param.h>
+#endif
 #include <stdio.h>
 #include <grp.h>
 #include <time.h>
@@ -35,8 +37,6 @@
 #include <j_lib2.h>
 #include <j_lib2m.h>
 
-
-#define JSTAT_REV "$Id: jistat.c,v 2.10 2021/02/21 20:30:26 jmccue Exp $"
 #define USG_MSG_JISTAT_1 "\tShow detail file information.\n"
 
 #define ID_GROUP gid_t
@@ -115,179 +115,10 @@ typedef struct
   char *prog_name;
   int warn_code;
   int verbose;        /* TRUE or FALSE */
-  int force;        /* TRUE or FALSE */
+  int force;          /* TRUE or FALSE */
   struct s_file_info out;
   struct s_file_info err;
 } work_area;
-
-/*** prototypes ***/
-void show_stat(FILE *, char *, struct stat *);
-char *get_groupname(ID_GROUP);
-char *get_username(ID_USER);
-int  split_rec(int, char **, ID_GROUP, char *);
-char *get_file_desc(struct stat *);
-int  show_rev(FILE *, char *);
-int  show_help(FILE *, char *);
-void get_args(int, char **, work_area *);
-void process_file(char *, work_area *);
-int open_out(FILE *, struct s_file_info *, char *, int);
-void init_finfo(struct s_file_info *);
-void close_out(struct s_file_info *, int);
-
-/*
- * main()
- */
-int main(int argc, char **argv)
-
-{
-  int i;
-  work_area w;
-
-#ifdef OpenBSD
-  if(pledge("stdio rpath wpath cpath",NULL) == -1)
-    err(1,"pledge\n");
-#endif
-
-  get_args(argc, argv, &w);
-
-  /*** process files ***/
-  for (i = optind; i < argc; i++)
-    process_file(argv[i], &w);
-
-  if (i == optind)
-    fprintf(w.err.fp, MSG_ERR_E005);
-
-  /*** done ***/
-  close_out(&(w.out), (int) TRUE);
-  close_out(&(w.err), (int) FALSE);
-  exit(w.warn_code);
-
-} /* main() */
-
-/*
- * process_file() -- process a specific file
- */
-void process_file(char *fname, work_area *w)
-
-{
-  struct stat s;
-
-  if (w->verbose)
-    fprintf(w->out.fp, "%s\n%s\n%s\n", LIT_C80, (fname == (char *) NULL ? "stdin" : fname), LIT_C80);
-
-  if (stat(fname, &s)  == -1)
-    {
-      fprintf(w->out.fp, LIT_MIS_FIL, fname);
-      w->warn_code = EXIT_LOGIC;
-    }
-  else
-    show_stat(w->out.fp, fname, &s);
-
-} /* process_file() */
-
-/*
- * show_stat()
- */
-void show_stat(FILE *fp, char *fname, struct stat *s)
-
-{
-  int  size;
-  char *gname;
-  char *uname;
-  char *ftype;
-  char *mode;
-  char fmt_mode[1024];
-
-  ftype = get_file_desc(s);
-  gname = get_groupname(s->st_gid);
-  uname = get_username(s->st_uid);
-
-  snprintf(fmt_mode, 1023, FMT_01, s->st_mode);
-
-  size = strlen(fmt_mode);
-  if (size > 4)
-    mode = &(fmt_mode[(size - 4)]);
-  else
-    mode = fmt_mode;
-
-  fprintf(fp, LIT_STAT_NAME,   fname);
-  fprintf(fp, LIT_STAT_TYPE,   ftype);
-  fprintf(fp, LIT_STAT_INODE,  (long int) s->st_ino);
-  fprintf(fp, LIT_STAT_LINK,   s->st_nlink);
-  fprintf(fp, LIT_STAT_DEVICE, s->st_dev);
-  fprintf(fp, LIT_STAT_PERMIS, mode);
-  fprintf(fp, LIT_STAT_OWNER,  s->st_uid,
-              (uname == (char *) NULL ? " " : uname));
-  fprintf(fp, LIT_STAT_GROUP,  s->st_gid,
-              (gname == (char *) NULL ? " " : gname));
-  fprintf(fp, LIT_STAT_SIZE,   (long int) s->st_size);
-
-  fprintf(fp, LIT_STAT_ACCESS, ctime(&(s->st_atime)));
-  fprintf(fp, LIT_STAT_MODIFY, ctime(&(s->st_mtime)));
-  fprintf(fp, LIT_STAT_STATUS, ctime(&(s->st_ctime)));
-
-} /* show_stat() */
-
-/*
- * get_groupname()
- */
-char *get_groupname(ID_GROUP gid)
-
-{
-  FILE *fp;
-  static char buf[2048];
-  char *gname;
-
-  gname = (char *) NULL;
-
-  fp = fopen(FILE_GROUP, "r");
-  if (fp == (FILE *) NULL)
-    return((char *) NULL);
-
-  /* read and get name */
-  while ( fgets(buf, 2048, fp) != (char *) NULL)
-    {
-      j2_bye_nl(buf);
-      if ( split_rec(2, &gname, gid, buf) )
-        break;
-    }
-
-
-  fclose(fp);
-
-  return(gname);
-
-} /* get_groupname() */
-
-/*
- * get_username()
- */
-char *get_username(ID_USER uid)
-
-{
-  FILE *fp;
-  static char buf[2048];
-  char *uname;
-
-  uname = (char *) NULL;
-
-  fp = fopen(FILE_PASSWD, "r");
-  if (fp == (FILE *) NULL)
-    return((char *) NULL);
-
-  /* read and get name */
-  while ( fgets(buf, 2048, fp) != (char *) NULL)
-    {
-      j2_bye_nl(buf);
-      if ( split_rec(2, &uname, uid, buf) )
-        break;
-    }
-
-  fclose(fp);
-
-  return(uname);
-
-} /* get_username() */
 
 /*
  * split_rec()
@@ -326,27 +157,6 @@ int split_rec(int fpos, char **gname, ID_GROUP gid, char *buf)
   return((int) TRUE);
 
 } /* split_rec() */
-
-/*
- * show_help()
- */
-int show_help(FILE *fp, char *pname)
-
-{
-
-  fprintf(fp, USG_MSG_USAGE, pname);
-  fprintf(fp, USG_MSG_JISTAT_1);
-  fprintf(fp, USG_MSG_OPTIONS);
-  fprintf(fp, USG_MSG_ARG_ERR,       SWITCH_CHAR, ARG_ERR);
-  fprintf(fp, USG_MSG_ARG_FORCE,     SWITCH_CHAR, ARG_FORCE);
-  fprintf(fp, USG_MSG_ARG_HELP,      SWITCH_CHAR, ARG_HELP);
-  fprintf(fp, USG_MSG_ARG_OUT,       SWITCH_CHAR, ARG_OUT);
-  fprintf(fp, USG_MSG_ARG_VERBOSE_1, SWITCH_CHAR, ARG_VERBOSE);
-  fprintf(fp, USG_MSG_ARG_VERSION,   SWITCH_CHAR, ARG_VERSION);
-
-  return(EXIT_FAILURE);
-
-} /* show_help() */
 
 /*
  * get_file_desc() -- Get File Type
@@ -405,9 +215,113 @@ char *get_file_desc(file_stat)
 #   endif
     default:
       return(FILE_DESC_UNKNOWN);
-    } /* end: switch */
+    } /*  switch() */
 
-} /* end: get_file_desc() */
+} /* get_file_desc() */
+
+/*
+ * get_username()
+ */
+char *get_username(ID_USER uid)
+
+{
+  FILE *fp;
+  static char buf[2048];
+  char *uname;
+
+  uname = (char *) NULL;
+
+  fp = fopen(FILE_PASSWD, "r");
+  if (fp == (FILE *) NULL)
+    return((char *) NULL);
+
+  /* read and get name */
+  while ( fgets(buf, 2048, fp) != (char *) NULL)
+    {
+      j2_bye_nl(buf);
+      if ( split_rec(2, &uname, uid, buf) )
+        break;
+    }
+
+  fclose(fp);
+
+  return(uname);
+
+} /* get_username() */
+
+/*
+ * get_groupname()
+ */
+char *get_groupname(ID_GROUP gid)
+
+{
+  FILE *fp;
+  static char buf[2048];
+  char *gname;
+
+  gname = (char *) NULL;
+
+  fp = fopen(FILE_GROUP, "r");
+  if (fp == (FILE *) NULL)
+    return((char *) NULL);
+
+  /* read and get name */
+  while ( fgets(buf, 2048, fp) != (char *) NULL)
+    {
+      j2_bye_nl(buf);
+      if ( split_rec(2, &gname, gid, buf) )
+        break;
+    }
+
+
+  fclose(fp);
+
+  return(gname);
+
+} /* get_groupname() */
+
+/*
+ * show_stat()
+ */
+void show_stat(FILE *fp, char *fname, struct stat *s)
+
+{
+  int  size;
+  char *gname;
+  char *uname;
+  char *ftype;
+  char *mode;
+  char fmt_mode[1024];
+
+  ftype = get_file_desc(s);
+  gname = get_groupname(s->st_gid);
+  uname = get_username(s->st_uid);
+
+  snprintf(fmt_mode, 1023, FMT_01, s->st_mode);
+
+  size = strlen(fmt_mode);
+  if (size > 4)
+    mode = &(fmt_mode[(size - 4)]);
+  else
+    mode = fmt_mode;
+
+  fprintf(fp, LIT_STAT_NAME,   fname);
+  fprintf(fp, LIT_STAT_TYPE,   ftype);
+  fprintf(fp, LIT_STAT_INODE,  (long int) s->st_ino);
+  fprintf(fp, LIT_STAT_LINK,   s->st_nlink);
+  fprintf(fp, LIT_STAT_DEVICE, s->st_dev);
+  fprintf(fp, LIT_STAT_PERMIS, mode);
+  fprintf(fp, LIT_STAT_OWNER,  s->st_uid,
+              (uname == (char *) NULL ? " " : uname));
+  fprintf(fp, LIT_STAT_GROUP,  s->st_gid,
+              (gname == (char *) NULL ? " " : gname));
+  fprintf(fp, LIT_STAT_SIZE,   (long int) s->st_size);
+
+  fprintf(fp, LIT_STAT_ACCESS, ctime(&(s->st_atime)));
+  fprintf(fp, LIT_STAT_MODIFY, ctime(&(s->st_mtime)));
+  fprintf(fp, LIT_STAT_STATUS, ctime(&(s->st_ctime)));
+
+} /* show_stat() */
 
 /*
  * show_rev()
@@ -416,13 +330,8 @@ int show_rev(FILE *fp, char *pname)
 {
 
   fprintf(fp,"%s %s:\n", pname, LIT_REV);
-  fprintf(fp,"\t%s\n", JSTAT_REV);
-  fprintf(fp,"\t%s\n", J_LIB2_H);
-  fprintf(fp,"\t     %s %s\n", LIT_INFO_02, j2_get_build());
+  fprintf(fp,"\t%s %s\n", LIT_INFO_02, j2_get_build());
 
-#ifdef J_LIB2M_H
-  fprintf(fp,"\t%s\n", J_LIB2M_H);
-#endif
 #ifdef OSTYPE
   fprintf(fp,"\t%s\n", OSTYPE);
 #endif
@@ -435,6 +344,95 @@ int show_rev(FILE *fp, char *pname)
   exit(EXIT_FAILURE);
 
 } /* show_rev() */
+
+/*
+ * show_help()
+ */
+int show_help(FILE *fp, char *pname)
+
+{
+
+  fprintf(fp, USG_MSG_USAGE, pname);
+  fprintf(fp, USG_MSG_JISTAT_1);
+  fprintf(fp, USG_MSG_OPTIONS);
+  fprintf(fp, USG_MSG_ARG_ERR,       SWITCH_CHAR, ARG_ERR);
+  fprintf(fp, USG_MSG_ARG_FORCE,     SWITCH_CHAR, ARG_FORCE);
+  fprintf(fp, USG_MSG_ARG_HELP,      SWITCH_CHAR, ARG_HELP);
+  fprintf(fp, USG_MSG_ARG_OUT,       SWITCH_CHAR, ARG_OUT);
+  fprintf(fp, USG_MSG_ARG_VERBOSE_1, SWITCH_CHAR, ARG_VERBOSE);
+  fprintf(fp, USG_MSG_ARG_VERSION,   SWITCH_CHAR, ARG_VERSION);
+
+  return(EXIT_FAILURE);
+
+} /* show_help() */
+
+/*
+ * init_finfo() -- initialize out file structure
+ */
+void init_finfo(struct s_file_info *f)
+
+{
+
+  f->fp    = (FILE *) NULL;
+  f->fname = (char *) NULL;
+
+} /* init_finfo() */
+
+/*
+ * open_out() -- save the file anem and check status
+ */
+int open_out(FILE *wfp, struct s_file_info *f, char *fname, int force)
+
+{
+  int errsave;
+
+  if (fname == (char *) NULL)
+    return(EXIT_SUCCESS);
+
+  if (force == (int) FALSE)
+    {
+      if ( j2_f_exist(fname) )
+	{
+	  fprintf(wfp, MSG_ERR_E025, fname);
+	  return(EXIT_FAILURE);
+	}
+    }
+
+
+  f->fp = fopen(fname, "w");
+  errsave = errno;
+  if (f->fp == (FILE *) NULL)
+    {
+      f->fp = stderr;  /* needs to be something */
+      fprintf(wfp, MSG_ERR_E002, fname);
+      fprintf(wfp, "\t%s\n", strerror(errsave));
+      return(EXIT_FAILURE);
+    }
+
+  /*** success, save file name ***/
+  f->fname = strdup(fname);
+  return(EXIT_SUCCESS);
+
+} /* open_out() */
+
+/*
+ * close_out() -- close output
+ */
+void close_out(struct s_file_info *f, int use_stdout)
+{
+
+  if (f->fname != (char *) NULL)
+    {
+      fclose(f->fp);
+      free(f->fname);
+      init_finfo(f);
+      if (use_stdout == (int) TRUE)
+	f->fp = stdout;
+      else
+	f->fp = stderr;
+    }
+
+} /* close_out() */
 
 /*
  * get_args() -- load arguments
@@ -459,15 +457,9 @@ void get_args(int argc, char **argv, work_area *w)
   w->err.fp    = stderr;
   w->prog_name = j2_get_prgname(argv[0], "jistat");
 
-#ifdef OpenBSD
   snprintf(ckarg, SIZE_OPT, "%c:%c:%c%c%c%c", 
           ARG_ERR, ARG_OUT, 
           ARG_HELP, ARG_VERSION, ARG_VERBOSE, ARG_FORCE);
-#else
-  sprintf(ckarg, "%c:%c:%c%c%c%c", 
-          ARG_ERR, ARG_OUT, 
-          ARG_HELP, ARG_VERSION, ARG_VERBOSE, ARG_FORCE);
-#endif
 
   while ((opt = getopt(argc, argv, ckarg)) != -1)
     {
@@ -532,74 +524,55 @@ void get_args(int argc, char **argv, work_area *w)
 	w->verbose = (int) TRUE;
     }
 
-} /* end: get_args() */
+} /* get_args() */
 
 /*
- * open_out() -- save the file anem and check status
+ * process_file() -- process a specific file
  */
-int open_out(FILE *wfp, struct s_file_info *f, char *fname, int force)
+void process_file(char *fname, work_area *w)
 
 {
-  int errsave;
+  struct stat s;
 
-  if (fname == (char *) NULL)
-    return(EXIT_SUCCESS);
+  if (w->verbose)
+    fprintf(w->out.fp, "%s\n%s\n%s\n", LIT_C80, (fname == (char *) NULL ? "stdin" : fname), LIT_C80);
 
-  if (force == (int) FALSE)
+  if (stat(fname, &s)  == -1)
     {
-      if ( j2_f_exist(fname) )
-	{
-	  fprintf(wfp, MSG_ERR_E025, fname);
-	  return(EXIT_FAILURE);
-	}
+      fprintf(w->out.fp, LIT_MIS_FIL, fname);
+      w->warn_code = EXIT_LOGIC;
     }
+  else
+    show_stat(w->out.fp, fname, &s);
 
-
-  f->fp = fopen(fname, "w");
-  errsave = errno;
-  if (f->fp == (FILE *) NULL)
-    {
-      f->fp = stderr;  /* needs to be something */
-      fprintf(wfp, MSG_ERR_E002, fname);
-      fprintf(wfp, "\t%s\n", strerror(errsave));
-      return(EXIT_FAILURE);
-    }
-
-  /*** success, save file name ***/
-  f->fname = strdup(fname);
-  return(EXIT_SUCCESS);
-
-} /* open_out() */
+} /* process_file() */
 
 /*
- * close_out() -- close output
+ * main()
  */
-void close_out(struct s_file_info *f, int use_stdout)
-{
-
-  if (f->fname != (char *) NULL)
-    {
-      fclose(f->fp);
-      free(f->fname);
-      init_finfo(f);
-      if (use_stdout == (int) TRUE)
-	f->fp = stdout;
-      else
-	f->fp = stderr;
-    }
-
-} /* close_out() */
-
-/*
- * init_finfo() -- initialize out file structure
- */
-void init_finfo(struct s_file_info *f)
+int main(int argc, char **argv)
 
 {
+  int i;
+  work_area w;
 
-  f->fp    = (FILE *) NULL;
-  f->fname = (char *) NULL;
+#ifdef OpenBSD
+  if(pledge("stdio rpath wpath cpath",NULL) == -1)
+    err(1,"pledge\n");
+#endif
 
-} /* init_finfo() */
+  get_args(argc, argv, &w);
 
-/* END: jistat.c */
+  /*** process files ***/
+  for (i = optind; i < argc; i++)
+    process_file(argv[i], &w);
+
+  if (i == optind)
+    fprintf(w.err.fp, MSG_ERR_E005);
+
+  /*** done ***/
+  close_out(&(w.out), (int) TRUE);
+  close_out(&(w.err), (int) FALSE);
+  exit(w.warn_code);
+
+} /* main() */
