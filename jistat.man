@@ -1,0 +1,80 @@
+.\" 
+.\" Copyright (c) 2014 2015 2016 2017 2018 
+.\"     John McCue <jmccue@jmcunx.com>
+.\" 
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\" 
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\" 
+.TH jistat 1 "$Date: 2018/06/24 16:50:15 $" "JMC" "Local Command"
+
+.SH NAME
+jistat - File Information
+.SH SYNOPSIS
+jistat [OPTIONS] FILE...
+.SH DESCRIPTION
+Display detail file status.
+Will show File Type, Inode, Link Count,
+Device, Access, Owner/group, Size and
+Last Access, Modify and Change Dates.
+.SH OPTIONS
+.TP
+.nf
+-e file
+.fi
+Optional, Errors written to the file specified, defaults to stderr.
+.TP
+-f
+Force file create.
+Create file even if the target file exists.
+.TP
+-h
+Show brief help and exit.
+.TP
+.nf
+-o file
+.fi
+Optional, Write output to the file specified, defaults to stdout.
+.TP
+.nf
+-v
+.fi
+Print headings before output of each file processed. 
+Defaults to 'do not show file headings'.
+.TP
+-V
+Output version information and exit.
+.SH BUGS
+Do not know of any.
+.SH DIAGNOSTICS
+You may want to use stat or istat,
+if available in your environment.
+.SH ERROR-CODES
+.nf
+0 success
+1 processing error or help/rev displayed
+.fi
+.SH SEE-ALSO
+basename(1),
+chmod(1),
+dirname(1),
+file(1),
+istat(1),
+l(1),
+lc(1),
+lf(1),
+lr(1),
+ls(1),
+lstat(2),
+lx(1),
+readlink(2),
+stat(1),
+stat(2)
