@@ -579,6 +579,8 @@ int main(int argc, char **argv)
   /*** done ***/
   close_out(&(w.out), (int) TRUE);
   close_out(&(w.err), (int) FALSE);
+  if (w.prog_name != (char *) NULL)
+    free(w.prog_name);
   exit(w.warn_code);
 
 } /* main() */
