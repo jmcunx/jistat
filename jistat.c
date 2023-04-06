@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 ... 2021 2022
+ * Copyright (c) 2014 ... 2023 2024
  *     John McCue <jmccue@jmcunx.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -40,91 +40,12 @@
 #include <err.h>
 #endif
 
+#ifdef HAVE_JLIB
 #include <j_lib2.h>
 #include <j_lib2m.h>
-
-#define USG_MSG_JISTAT_1 "\tShow detail file information.\n"
-
-#define ID_GROUP gid_t
-#define ID_USER  uid_t
-
-/*** values returned by file_type() ***/
-#define SIZE_OPT 80
-#define FILE_DESC_UNKNOWN       "Type Unknown"
-#define FILE_DESC_DIRECTORY     "Directory"
-#define FILE_DESC_REGULAR       "Regular"
-#define FILE_DESC_CHAR_SPECIAL  "Character Special"
-#define FILE_DESC_BLOCK_SPECIAL "Block Special"
-#define FILE_DESC_PIPE          "Pipe"
-#define FILE_DESC_SOCKET        "Socket"
-#define FILE_DESC_SYMB_LINK     "Symbolic Link"
-#define FILE_DESC_FIFO          "FIFO"
-
-#define LIT_STAT_NAME   "File: %s\n"
-#define LIT_STAT_TYPE   "      File Type:          %s\n"
-
-#ifndef LIT_STAT_INODE
-#ifdef __FreeBSD__
-#  define LIT_STAT_INODE    "      Inode:              %d\n"
-#  define LIT_STAT_DEVICE   "      Device:             %x\n"
-#  define LIT_STAT_LINK     "      Link Count:         %u\n"
-#endif
 #endif
 
-#ifndef LIT_STAT_INODE
-#ifdef OpenBSD
-#  define LIT_STAT_INODE    "      Inode:              %ld\n"
-#  define LIT_STAT_DEVICE   "      Device:             %x\n"
-#  define LIT_STAT_LINK     "      Link Count:         %u\n"
-#endif
-#endif
-
-#ifndef LIT_STAT_INODE
-#ifdef __NetBSD_Version__
-#  define LIT_STAT_INODE    "      Inode:              %ld\n"
-#  define LIT_STAT_DEVICE   "      Device:             %Lux\n"
-#  define LIT_STAT_LINK     "      Link Count:         %u\n"
-#endif
-#endif
-
-#ifndef LIT_STAT_INODE
-#  define LIT_STAT_INODE    "      Inode:              %ld\n"
-#  define LIT_STAT_LINK     "      Link Count:         %lud\n"
-#  define LIT_STAT_DEVICE   "      Device:             %lu\n"
-#endif
-
-#define FMT_01          "%o"
-#define LIT_STAT_SIZE   "      Size:               %ld\n"
-#define LIT_STAT_PERMIS "      Permissions:        %s\n"
-#define LIT_STAT_OWNER  "      Owner:              %-7d %s\n"
-#define LIT_STAT_GROUP  "      Group:              %-7d %s\n"
-#define LIT_STAT_ACCESS "      Last Access:        %s"
-#define LIT_STAT_MODIFY "      Last Modify:        %s"
-#define LIT_STAT_STATUS "      Last Status Change: %s"
-
-/*** File Names ***/
-#define FILE_GROUP  "/etc/group"
-#define FILE_PASSWD "/etc/passwd"
-
-/*** Literals ***/
-#define LIT_MIS_FIL "Cannot locate: %s\n"
-
-/*** structures ***/
-struct s_file_info
-{
-  FILE *fp;
-  char *fname;
-} ;
-
-typedef struct
-{
-  char *prog_name;
-  int warn_code;
-  int verbose;        /* TRUE or FALSE */
-  int force;          /* TRUE or FALSE */
-  struct s_file_info out;
-  struct s_file_info err;
-} work_area;
+#include "jistat.h"
 
 /*
  * split_rec()
@@ -336,7 +257,9 @@ int show_rev(FILE *fp, char *pname)
 {
 
   fprintf(fp,"%s %s:\n", pname, LIT_REV);
+#ifdef J_LIB2_H
   fprintf(fp,"\t%s %s\n", LIT_INFO_02, j2_get_build());
+#endif
 
 #ifdef OSTYPE
   fprintf(fp,"\t%s\n", OSTYPE);
