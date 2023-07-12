@@ -89,7 +89,7 @@ OBJ=.o
 #VALGRIND##FOUND_JLIB#CFLAGS=-O0 -g -c $(WALL) $(HJLIB) -IINCJLIB -DOSTYPE="\"$(OSDESC)\""
 #VALGRIND##FOUND_JLIB#LFLAGS=-O0 -g $(WALL) -LJLIBLOC -o jistat $(LIBS)
 #VALGRIND##NO_JLIB#CFLAGS=-O0 -g -c $(WALL) -DOSTYPE="\"$(OSDESC)\""
-#VALGRIND##NO_JLIB#LFLAGS=-O0 -g -$(WALL) -o jistat $(LIBS)
+#VALGRIND##NO_JLIB#LFLAGS=-O0 -g $(WALL) -o jistat $(LIBS)
 
 #--- continue on
 #NO_JLIB#JCC=jistat_j.c
